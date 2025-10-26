@@ -1,0 +1,169 @@
+Thought for 28s
+
+theek hai bhai — tumne articleService.js aur authService.js delete kar di hain, to ab step-by-step batata hoon kya banana hai aur kin files me kya change karna hai. Bas ye follow karo ⬇️
+
+Step 0) (ensure) json-server chal raha ho
+npx json-server --watch db.json --port 5000
+
+
+api.js same baseURL use karega.
+
+Step 1) src/services/api.js (confirm/create)
+// src/services/api.js
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:5000",
+});
+
+api.interceptors.request.use((config) => {
+  const raw = localStorage.getItem("user");
+  const token = raw ? JSON.parse(raw)?.token : null;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export default api;
+
+Step 2) src/services/articleService.js (create)
+// src/services/articleService.js
+import api from "./api";
+
+export const getArticles = () => api.get("/articles");
+export const getArticleById = (id) => api.get(`/articles/${id}`);
+
+Step 3) src/services/authService.js (create)
+// src/services/authService.js
+import api from "./api";
+
+// json-server compatible
+export const getUsers = () => api.get("/users");
+export const approveUser = (id) => api.patch(`/users/${id}`, { status: "approved" });
+export const rejectUser = (id) => api.patch(`/users/${id}`, { status: "rejected" });
+
+// Register ko abhi /users pe POST kar den (json-server me ye hi chalega)
+export const registerUser = (payload) =>
+  api.post("/users", {
+    name: payload.name,
+    email: payload.email,
+    role: "user",
+    status: "pending"
+  });
+
+// Real backend aayega to ye use karo (tab /login endpoint hoga)
+export const loginUser = (payload) => api.post("/login", payload);
+
+
+Note: json-server me /login nahi hota. Abhi login ke liye getUsers() se email match karenge (neeche code diya hai).
+
+Step 4) Components me exact changes
+4.1) src/pages/articles/ArticlesList.jsx
+
+Replace imports + API call
+
+- import api from "../../services/api";
++ import { getArticles } from "../../services/articleService";
+
+- useEffect(() => {
+-   api.get("/articles").then(res => setArticles(res.data));
+- }, []);
++ useEffect(() => {
++   getArticles().then(res => setArticles(res.data));
++ }, []);
+
+4.2) src/pages/articles/ArticleDetail.jsx
+- import api from "../../services/api";
++ import { getArticleById } from "../../services/articleService";
+
+- useEffect(() => {
+-   api.get(`/articles/${id}`).then(res => setArticle(res.data));
+- }, [id]);
++ useEffect(() => {
++   getArticleById(id).then(res => setArticle(res.data));
++ }, [id]);
+
+4.3) src/pages/admin/AdminPanel.jsx
+- import api from "../../services/api";
++ import { getUsers, approveUser, rejectUser } from "../../services/authService";
+
+- useEffect(() => {
+-   api.get("/users").then(res => setUsers(res.data));
+- }, []);
++ useEffect(() => {
++   getUsers().then(res => setUsers(res.data));
++ }, []);
+
+- const handleApprove = (id) => {
+-   api.patch(`/users/${id}`, { status: "approved" })
+-     .then(res => setUsers(users.map(u => (u.id === id ? res.data : u))));
+- };
++ const handleApprove = (id) => {
++   approveUser(id).then(res =>
++     setUsers(users.map(u => (u.id === id ? res.data : u)))
++   );
++ };
+
+- const handleReject = (id) => {
+-   api.patch(`/users/${id}`, { status: "rejected" })
+-     .then(res => setUsers(users.map(u => (u.id === id ? res.data : u))));
+- };
++ const handleReject = (id) => {
++   rejectUser(id).then(res =>
++     setUsers(users.map(u => (u.id === id ? res.data : u)))
++   );
++ };
+
+4.4) src/pages/Login.jsx (json-server mode)
+
+Abhi real /login endpoint nahi hai, isliye email match use karo via getUsers():
+
+- import api from "../services/api";
++ import { getUsers } from "../services/authService";
+
+// inside handleSubmit:
+const res = await getUsers();
+const foundUser = res.data.find(u => u.email === form.email);
+
+if (!foundUser) {
+  alert("User not found");
+  return;
+}
+
+// login + redirect
+login(foundUser);
+if (foundUser.role === "admin") navigate("/admin");
+else navigate("/articles");
+
+
+Jab real backend aajaye, isi file me upar import ko change karke:
+import { loginUser } from "../services/authService";
+aur loginUser({ email, password }) call kar lena.
+
+4.5) src/pages/Register.jsx
+
+Ab registration ko /users pe POST kara do (json-server):
+
+- // demo: directly login(...)
++ import { registerUser } from "../services/authService";
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await registerUser(form); // users me new row add
+    // optionally, auto-login demo:
+    login(res.data);
+    navigate("/articles");
+  } catch (err) {
+    console.error(err);
+    alert("Registration failed");
+  }
+};
+
+Step 5) (optional) .env se baseURL control karo
+
+.env:
+
+VITE_API_BASE=http://localhost:5000
+
+
+Restart dev server.

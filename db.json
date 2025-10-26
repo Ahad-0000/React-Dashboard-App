@@ -1,0 +1,36 @@
+{
+  "articles": [
+  { "id": 1, "title": "Test News", "body": "English body...", "language": "EN", "source": "bbc.com", "fetched_at": "2025-09-12" },
+  { "id": 2, "title": "خبر عاجل", "body": "Arabic body...", "language": "AR", "source": "aljazeera.com", "fetched_at": "2025-09-12" },
+  { "id": 3, "title": "Россия новости", "body": "Russian body...", "language": "RU", "source": "ria.ru", "fetched_at": "2025-09-12" }
+]
+,
+  "user": [
+    { "id": 1, "name": "Admin", "role": "admin" }
+  ],
+
+  "stats": {
+  "byLanguage": [
+    { "language": "EN", "count": 10 },
+    { "language": "AR", "count": 5 },
+    { "language": "RU", "count": 3 }
+  ],
+  "byDomain": [
+    { "domain": "bbc.com", "count": 6 },
+    { "domain": "cnn.com", "count": 5 },
+    { "domain": "ria.ru", "count": 3 }
+  ],
+  "perDay": [
+    { "date": "2025-09-10", "count": 4 },
+    { "date": "2025-09-11", "count": 7 },
+    { "date": "2025-09-12", "count": 5 }
+  ]
+},
+
+"users": [
+  { "id": 1, "name": "Admin", "email": "admin@test.com", "role": "admin", "status": "approved" },
+  { "id": 2, "name": "Ali", "email": "ali@test.com", "role": "user", "status": "pending" },
+  { "id": 3, "name": "Sara", "email": "sara@test.com", "role": "user", "status": "approved" }
+]
+
+}
